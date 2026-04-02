@@ -1,0 +1,51 @@
+name: Tests y actualizar early
+
+# Se ejecuta en cada push a main
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descarga el código de main
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Configura Java
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Ejecuta los tests con Maven
+      - name: Ejecutar tests
+        run: mvn test
+
+  actualizar-early:
+    # Solo se ejecuta si el job de tests ha pasado
+    needs: tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      # 1. Descarga el código
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para poder hacer push a otra rama
+
+      # 2. Actualiza early con el contenido de main
+      - name: Actualizar rama early
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout early
+          git merge main --ff-only
+          git push origin early
