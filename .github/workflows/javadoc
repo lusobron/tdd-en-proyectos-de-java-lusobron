@@ -1,0 +1,58 @@
+name: Generar y publicar Javadoc
+
+# Solo se ejecuta cuando hay cambios en la rama stable
+on:
+  push:
+    branches:
+      - stable
+
+jobs:
+  javadoc:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 1. Descarga el código de la rama stable
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Configura Java
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Genera el Javadoc
+      - name: Generar Javadoc
+        run: |
+          javadoc -d docs \
+                  -sourcepath src/main/java \
+                  -subpackages com.tt1 \
+                  -author \
+                  -version \
+                  -encoding UTF-8 \
+                  -charset UTF-8
+
+      # 4. Prepara el contenido para GitHub Pages
+      - name: Configurar Pages
+        uses: actions/configure-pages@v4
+
+      # 5. Sube la carpeta docs/ como artefacto
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      # 6. Despliega en GitHub Pages
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
